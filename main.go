@@ -21,9 +21,14 @@ func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 }
 
 func (cfg *apiConfig) showrequests(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(200)
-	w.Write([]byte(fmt.Sprintf("Hits: %d", cfg.fileserverHits.Load())))
+	w.Write([]byte(fmt.Sprintf(`<html>
+  <body>
+    <h1>Welcome, Chirpy Admin</h1>
+    <p>Chirpy has been visited %d times!</p>
+  </body>
+</html>`, cfg.fileserverHits.Load())))
 }
 
 func (cfg *apiConfig) resetrequests(w http.ResponseWriter, r *http.Request) {
@@ -44,9 +49,9 @@ func main() {
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app/", http.FileServer(http.Dir(".")))))
-	mux.HandleFunc("/healthz", healthcheck)
-	mux.HandleFunc("/metrics", apiCfg.showrequests)
-	mux.HandleFunc("/reset", apiCfg.resetrequests)
+	mux.HandleFunc("GET /api/healthz", healthcheck)
+	mux.HandleFunc("GET /admin/metrics", apiCfg.showrequests)
+	mux.HandleFunc("POST /admin/reset", apiCfg.resetrequests)
 	server := &http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
